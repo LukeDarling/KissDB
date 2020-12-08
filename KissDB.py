@@ -121,7 +121,6 @@ def handleRequest(client, address):
             if "content-length: " in header.lower():
                 length = int(header.split(": ")[1])
                 lengthFound = True
-                break
         if not lengthFound:
             client.send(encodeResponse(json.dumps({"status": "error", "error": "Content length must be specified in the request header for request verbs which send body content. (POST, PUT)"}), status="411 Length Required"))
             client.close()
@@ -136,16 +135,12 @@ def handleRequest(client, address):
 
 def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
-    path = path[1:].split("/")
+    path = path.replace("/", " ").strip().split(" ")
 
     if len(path) > 3:
             client.send(encodeResponse(json.dumps({"status": "error", "error": "Path exceeds depth of structure."}), status="400 Bad Request"))
             client.close()
             return
-
-    if len(path) == 0:
-        # List databases
-        pass
 
     # Create
     if verb == "POST":
@@ -195,13 +190,13 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
                 # Table exists
                 if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
 
-                    # Row exists already, error
-                    if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2] + ".row"):
-                        client.send(encodeResponse(json.dumps({"status": "error", "error": "Row already exists."}), status="409 Conflict"))
+                    # Box already exists, error
+                    if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2] + ""):
+                        client.send(encodeResponse(json.dumps({"status": "error", "error": "Box already exists."}), status="409 Conflict"))
                         client.close()
                         return
 
-                    # Row does not exist, create it
+                    # Box does not exist, create it
                     else:
                         # TODO
                         pass
@@ -220,8 +215,83 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
     # Read
     elif verb == "GET":
-        pass
-        
+
+        # List databases
+        if len(path) == 1 and path[0] == "":
+            client.send(encodeResponse(json.dumps(next(os.walk("data/db/"))[1])))
+            client.close()
+            return
+
+        # List tables
+        elif len(path) == 1:
+
+            # Database exists, list its tables
+            if os.path.exists("data/db/" + path[0] + "/"):
+                client.send(encodeResponse(json.dumps(next(os.walk("data/db/" + path[0] + "/"))[1])))
+                client.close()
+                return
+
+            # Database does not exist, error
+            else:
+                client.send(encodeResponse(json.dumps({"status": "error", "error": "Database does not exist."}), status="404 Not Found"))
+                client.close()
+                return
+
+        # List boxes
+        elif len(path) == 2:
+
+            # Database exists, check table
+            if os.path.exists("data/db/" + path[0] + "/"):
+
+                # Table exists, list its boxes
+                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
+                    client.send(encodeResponse(json.dumps(next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2])))
+                    client.close()
+                    return
+
+                # Table does not exist, error
+                else:
+                    client.send(encodeResponse(json.dumps({"status": "error", "error": "Table does not exist."}), status="404 Not Found"))
+                    client.close()
+                    return
+
+            # Database does not exist, error
+            else:
+                client.send(encodeResponse(json.dumps({"status": "error", "error": "Database does not exist."}), status="404 Not Found"))
+                client.close()
+                return
+
+        # Get box contents
+        elif len(path) == 3:
+
+            # Database exists, check table
+            if os.path.exists("data/db/" + path[0] + "/"):
+
+                # Table exists, check box
+                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
+
+                    # Box exists, get its contents
+                    if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2]):
+                        # TODO
+                        pass
+
+                    # Box does not exist, error
+                    else:
+                        client.send(encodeResponse(json.dumps({"status": "error", "error": "Box does not exist."}), status="404 Not Found"))
+                        client.close()
+                        return
+
+                # Table does not exist, error
+                else:
+                    client.send(encodeResponse(json.dumps({"status": "error", "error": "Table does not exist."}), status="404 Not Found"))
+                    client.close()
+                    return
+
+            # Database does not exist, error
+            else:
+                client.send(encodeResponse(json.dumps({"status": "error", "error": "Database does not exist."}), status="404 Not Found"))
+                client.close()
+                return
 
     # Update
     elif verb == "PUT":
@@ -233,7 +303,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
 
 
-    client.send(encodeResponse("Verb: " + verb + "; Path: " + path + "; Data: " + data + ";"))
+    client.send(encodeResponse("Verb: " + verb + "; Path: " + "/".join(path) + "; Data: " + data + ";"))
     pass
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
