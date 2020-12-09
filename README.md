@@ -22,8 +22,11 @@ In this way, I could access the information of a given username using a request 
 
 Which might return:
 
-`{"name":"Luke Darling","email":"luke@lukedarling.dev"}`
+`{"status": "200", "result": ["{\"name\": \"Luke Darling\", \"email\": \"luke@lukedarling.dev\"}"]}`
 
+Or, if the box doesn't exist:
+
+`{"status": "404", "error": "Box does not exist."}`
 
 ### Security
 The server will eventually implement authentication, but for the moment should be hidden behind localhost with a firewall in place blocking outside access to its bound port. Once authentication is implemented, it should still be hidden behind localhost and proxied via HTTPS using nginx or a similar server.
