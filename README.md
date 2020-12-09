@@ -12,7 +12,9 @@ KissDB is a very simple key-value NoSQL database server built for small- to medi
 The structure is as follows:
 
 One KissDB server hosts an unlimited number of database objects.
+
 One KissDB database object holds an unlimited number of table objects.
+
 One KissDB table object holds an unlimited number of boxes.
 
 A KissDB table object acts like a container of key-value pairs with the name of each box being a key and its contents being the value associated with it.
