@@ -7,7 +7,6 @@
 ### About
 KissDB is a very simple key-value NoSQL database server built for small- to medium-scale data storage needs. It offers simultaneous connections, resource locking, and a RESTful API. It has a theoretically infinite table and box size depending on available disk space, mitigating one of the main hassles of SQL databases. Its intended purpose is JSON storage, but any textual data can be stored.
 
-
 ### Structure
 The structure is as follows:
 
@@ -131,6 +130,10 @@ N/A
 `DELETE /<database>/<table>/<box>`
 ##### Body
 N/A
+
+
+### System Requirements
+KissDB currently only works on Linux and has only been tested on Ubuntu. I will never create a Windows version, even though it would be very simple to make cross-compatible, simply because Windows is inferior and not worth wasting code on.
 
 
 ### Disclaimer
