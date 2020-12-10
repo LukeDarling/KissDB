@@ -7,7 +7,7 @@ import os, json, time, signal, datetime, fcntl, threading, socket, yaml
 
 
 # Constants
-CONFIG = {"bind-address": "127.0.0.1","bind-port": 1700}
+CONFIG = {"bind-address": "127.0.0.1","bind-port": 1700, "cache-seconds": 60}
 
 # Functions
 def log(entry: str, color:str = None):
@@ -33,14 +33,12 @@ def exitGracefully():
     log("Shutting down...")
     logWarning("Forcibly shutting down after initial Ctrl-C could cause loss of data.")
     log("Finishing current requests. Please wait...")
-    # Workaround to bypass blocking socket listener
-    #os.system("echo \"\r\n\r\n\" | telnet " + config["bind-address"] + " " + str(config["bind-port"]) + " > /dev/null 2> /dev/null")
     exit()
 
 def encodeResponse(content: str, status: str = "200 OK"):
     length = len(content.encode())
     # TODO: Testing, need to figure out exact/variable headers to send
-    return ("HTTP/1.0 " + status + "\r\nContent-type: application/json; charset=UTF-8\r\nContent-length: " + str(length) + "\r\nConnection: closed\r\n\r\n" + content).encode()
+    return ("HTTP/1.1 " + status + "\r\nContent-type: application/json; charset=UTF-8\r\nContent-length: " + str(length) + "\r\nConnection: closed\r\n\r\n" + content).encode()
 
 # Create
 def createDatabase(db: str) -> bool:
