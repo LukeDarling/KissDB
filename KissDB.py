@@ -10,7 +10,7 @@ import os, json, time, signal, datetime, fcntl, threading, socket, yaml
 CONFIG = {"bind-address": "127.0.0.1","bind-port": 1700}
 
 # Functions
-def log(entry: str, color=None):
+def log(entry: str, color:str = None):
     print("[" + datetime.datetime.now().strftime("%m/%d/%Y @ %I:%M:%S %p") + "] " + (("\033[" + color + "m") if not color == None else "") + entry + (("\u001b[0m") if not color == None else ""))
 
 def logError(entry: str):
@@ -23,7 +23,7 @@ def logInfo(entry: str):
     log("INFO: " + entry + "", color="0;34")
 
 def interrupt(_, __):
-    print("\r", end="")
+    print("\r", end = "")
     signal.signal(signal.SIGINT, SIGINT)
     exitGracefully()
 
@@ -37,10 +37,47 @@ def exitGracefully():
     #os.system("echo \"\r\n\r\n\" | telnet " + config["bind-address"] + " " + str(config["bind-port"]) + " > /dev/null 2> /dev/null")
     exit()
 
-def encodeResponse(content: str, status="200 OK"):
+def encodeResponse(content: str, status: str = "200 OK"):
     length = len(content.encode())
     # TODO: Testing, need to figure out exact/variable headers to send
     return ("HTTP/1.0 " + status + "\r\nContent-type: application/json; charset=UTF-8\r\nContent-length: " + str(length) + "\r\nConnection: closed\r\n\r\n" + content).encode()
+
+# Create
+def createDatabase(db: str) -> bool:
+    # TODO
+    return False
+
+def createTable(db: str, table: str) -> bool:
+    # TODO
+    return False
+
+def createBox(db: str, table: str, box: str, content: str = None) -> bool:
+    # TODO
+    return False
+
+# Read
+def readBox(db: str, table: str, box: str) -> str:
+    # TODO
+    raise Exception("Testing")
+    return ""
+
+# Update
+def updateBox(db: str, table: str, box: str, content: str) -> bool:
+    # TODO
+    return False
+
+# Delete
+def deleteDatabase(db: str) -> bool:
+    # TODO
+    return False
+
+def deleteTable(db: str, table: str) -> bool:
+    # TODO
+    return False
+
+def deleteBox(db: str, table: str, box: str) -> bool:
+    # TODO
+    return False
 
 # Setup
 log("Starting server...")
@@ -62,7 +99,7 @@ if not os.path.exists("data/config.yml"):
     log("Creating configuration...")
     try:
         with open("data/config.yml", "w") as f:
-            f.write(yaml.dump(CONFIG, Dumper=yaml.Dumper))
+            f.write(yaml.dump(CONFIG, Dumper = yaml.Dumper))
         log("Configuration created.")
         cd = os.path.split(os.path.realpath(__file__))[0]
         logInfo("You can modify the configuration at " + cd + "/data/config.yml")
@@ -75,7 +112,7 @@ else:
 log("Loading configuration...")
 try:
     with open("data/config.yml", "r") as f:
-        config = yaml.load(f.read(), Loader=yaml.Loader)
+        config = yaml.load(f.read(), Loader = yaml.Loader)
     log("Configuration loaded.")
 except:
     logError("Configuration could not be loaded.")
@@ -123,13 +160,13 @@ def handleRequest(client, address):
     length = 0
     head = headers[0].split(" ")
     if len(head) < 3:
-        client.send(encodeResponse(json.dumps({"status": "400", "error": "Malformed request header."}), status="400 Bad Request"))
+        client.send(encodeResponse(json.dumps({"success": False, "result": "Malformed request header."}), status = "400 Bad Request"))
         client.close()
         return
 
     verb = head[0].upper()
     if not verb in ["POST", "GET", "PUT", "DELETE"]:
-        client.send(encodeResponse(json.dumps({"status": "400", "error": "Invalid request verb."}), status="400 Bad Request"))
+        client.send(encodeResponse(json.dumps({"success": False, "result": "Invalid request verb."}), status = "400 Bad Request"))
         client.close()
         return
 
@@ -143,7 +180,7 @@ def handleRequest(client, address):
                 length = int(header.split(": ")[1])
                 lengthFound = True
         if not lengthFound:
-            client.send(encodeResponse(json.dumps({"status": "411", "error": "Content length must be specified in the request header for request verbs which send body content. (POST, PUT)"}), status="411 Length Required"))
+            client.send(encodeResponse(json.dumps({"success": False, "result": "Content length must be specified in the request header for request verbs which send body content. (POST, PUT)"}), status = "411 Length Required"))
             client.close()
             return
     
@@ -159,7 +196,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
     path = path.replace("/", " ").strip().split(" ")
 
     if len(path) > 3:
-            client.send(encodeResponse(json.dumps({"status": "400", "error": "Path exceeds depth of structure."}), status="400 Bad Request"))
+            client.send(encodeResponse(json.dumps({"success": False, "result": "Path exceeds depth of structure."}), status = "400 Bad Request"))
             client.close()
             return
 
@@ -171,7 +208,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
             # Database exists already, error
             if os.path.exists("data/db/" + path[0] + "/"):
-                client.send(encodeResponse(json.dumps({"status": "409", "error": "Database already exists."}), status="409 Conflict"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database already exists."}), status = "409 Conflict"))
                 client.close()
                 return
 
@@ -188,7 +225,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
                 # Table exists already, error
                 if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
-                    client.send(encodeResponse(json.dumps({"status": "409", "error": "Table already exists."}), status="409 Conflict"))
+                    client.send(encodeResponse(json.dumps({"success": False, "result": "Table already exists."}), status = "409 Conflict"))
                     client.close()
                     return
 
@@ -199,7 +236,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
             # Database does not exist, error
             else:
-                client.send(encodeResponse(json.dumps({"status": "404", "error": "Database does not exist."}), status="404 Not Found"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database does not exist."}), status = "404 Not Found"))
                 client.close()
                 return
 
@@ -213,7 +250,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
                     # Box already exists, error
                     if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2] + ""):
-                        client.send(encodeResponse(json.dumps({"status": "409", "error": "Box already exists."}), status="409 Conflict"))
+                        client.send(encodeResponse(json.dumps({"success": False, "result": "Box already exists."}), status = "409 Conflict"))
                         client.close()
                         return
 
@@ -224,13 +261,13 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
                 # Table does not exist, error
                 else:
-                    client.send(encodeResponse(json.dumps({"status": "404", "error": "Table does not exist."}), status="404 Not Found"))
+                    client.send(encodeResponse(json.dumps({"success": False, "result": "Table does not exist."}), status = "404 Not Found"))
                     client.close()
                     return
 
             # Database does not exist, error
             else:
-                client.send(encodeResponse(json.dumps({"status": "404", "error": "Database does not exist."}), status="404 Not Found"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database does not exist."}), status = "404 Not Found"))
                 client.close()
                 return
 
@@ -239,7 +276,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
         # List databases
         if len(path) == 1 and path[0] == "":
-            client.send(encodeResponse(json.dumps({"status": "200", "result": next(os.walk("data/db/"))[1]})))
+            client.send(encodeResponse(json.dumps({"success": True, "result": next(os.walk("data/db/"))[1]})))
             client.close()
             return
 
@@ -248,13 +285,13 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
             # Database exists, list its tables
             if os.path.exists("data/db/" + path[0] + "/"):
-                client.send(encodeResponse(json.dumps({"status": "200", "result": next(os.walk("data/db/" + path[0] + "/"))[1]})))
+                client.send(encodeResponse(json.dumps({"success": True, "result": next(os.walk("data/db/" + path[0] + "/"))[1]})))
                 client.close()
                 return
 
             # Database does not exist, error
             else:
-                client.send(encodeResponse(json.dumps({"status": "404", "error": "Database does not exist."}), status="404 Not Found"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database does not exist."}), status = "404 Not Found"))
                 client.close()
                 return
 
@@ -266,19 +303,19 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
                 # Table exists, list its boxes
                 if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
-                    client.send(encodeResponse(json.dumps({"status": "200", "result": next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2]})))
+                    client.send(encodeResponse(json.dumps({"success": True, "result": next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2]})))
                     client.close()
                     return
 
                 # Table does not exist, error
                 else:
-                    client.send(encodeResponse(json.dumps({"status": "404", "error": "Table does not exist."}), status="404 Not Found"))
+                    client.send(encodeResponse(json.dumps({"success": False, "result": "Table does not exist."}), status = "404 Not Found"))
                     client.close()
                     return
 
             # Database does not exist, error
             else:
-                client.send(encodeResponse(json.dumps({"status": "404", "error": "Database does not exist."}), status="404 Not Found"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database does not exist."}), status = "404 Not Found"))
                 client.close()
                 return
 
@@ -293,24 +330,33 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
                     # Box exists, get its contents
                     if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2]):
-                        # TODO
-                        pass
+                        try:
+                            data = readBox(path[0], path[1], path[2])
+                        except:
+                            logError("Unable to get box contents: " + "/".join(path))
+                            data = None
+                        if data == None:
+                            client.send(encodeResponse(json.dumps({"success": False, "result": "Problem getting box contents."}), status = "500 Internal Server Error"))
+                        else:
+                            client.send(encodeResponse(json.dumps({"success": True, "result": data})))
+                        client.close()
+                        return
 
                     # Box does not exist, error
                     else:
-                        client.send(encodeResponse(json.dumps({"status": "404", "error": "Box does not exist."}), status="404 Not Found"))
+                        client.send(encodeResponse(json.dumps({"success": False, "result": "Box does not exist."}), status = "404 Not Found"))
                         client.close()
                         return
 
                 # Table does not exist, error
                 else:
-                    client.send(encodeResponse(json.dumps({"status": "404", "error": "Table does not exist."}), status="404 Not Found"))
+                    client.send(encodeResponse(json.dumps({"success": False, "result": "Table does not exist."}), status = "404 Not Found"))
                     client.close()
                     return
 
             # Database does not exist, error
             else:
-                client.send(encodeResponse(json.dumps({"status": "404", "error": "Database does not exist."}), status="404 Not Found"))
+                client.send(encodeResponse(json.dumps({"success": False, "result": "Database does not exist."}), status = "404 Not Found"))
                 client.close()
                 return
 
@@ -337,6 +383,6 @@ while running:
         client, address = sock.accept()
         client.settimeout(60)
         # Start a new thread to handle this client and go back to listening for requests
-        threading.Thread(target=handleRequest, args=(client, address)).start()
+        threading.Thread(target = handleRequest, args = (client, address)).start()
     except KeyboardInterrupt:
         pass
