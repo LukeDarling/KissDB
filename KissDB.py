@@ -8,7 +8,7 @@ import json, yaml
 
 
 # Constants
-CONFIG = {"bind-address": "127.0.0.1", "bind-port": 1700, "cache-seconds": 60, "timeout-seconds": 10}
+CONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
 
 # Functions
 def log(entry: str, color:str = None):
@@ -129,7 +129,7 @@ if not os.path.exists("data/db/"):
 else:
     log("Database storage found.")
 
-log("Server successfully started.")
+logInfo("Server successfully started on localhost:" + str(config["server-bind-port"]) + ".")
 
 dbCount = len(next(os.walk("data/db/"))[1])
 logInfo("Handling " + "{:,}".format(dbCount) + " database" + ("." if dbCount == 1 else "s."))
@@ -332,7 +332,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.bind((config["bind-address"], config["bind-port"]))
+sock.bind(("127.0.0.1", config["server-bind-port"]))
 
 # Tell the server to begin listening and allow 128 backlogged requests in case of heavy server load (default maximum for Ubuntu)
 sock.listen(128)
