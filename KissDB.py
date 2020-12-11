@@ -264,8 +264,9 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
         # Create row
         else:
 
-            # Structure exists
+            # Check structure existence
             exists = tableExists(path[0], path[1])
+            # Structure exists
             if exists[0]:
 
                 # Box exists already, error
@@ -309,10 +310,12 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
             # Check structure existence
             exists = tableExists(path[0], path[1])
+
+            # Structure exists
             if exists[0]:
                 return sendResponse(client, success = True, result = next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2])
 
-            # Database does not exist, error
+            # Structure does not exist, error
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
@@ -323,9 +326,12 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             exists = boxExists(path[0], path[1], path[2])
             if exists[0]:
                 try:
+                    # Try reading box contents
                     data = readBox(path[0], path[1], path[2])
+                    # Success, send the client the data
                     return sendResponse(client, success = True, result = data)
                 except:
+                    # Might be a filesystem permission problem
                     logError("Unable to get box contents: " + "/".join(path))
                     return sendResponse(client, success = False, result = "Problem getting box contents.", status = "500 Internal Server Error")
 
@@ -341,8 +347,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
     else:
         pass
 
-
-
+# Prepare server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind(("127.0.0.1", config["server-bind-port"]))

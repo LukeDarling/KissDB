@@ -1,11 +1,11 @@
 # KissDB
 
 
-## Keep It Simple, Stupid - Database Server
+## Keep It Simple, Stupid: Database Server
 
 
 ### About
-KissDB is a very simple key-value NoSQL database server built for small- to medium-scale data storage needs. It offers simultaneous connections, resource locking, and a RESTful API. It has a theoretically infinite table and box size depending on available disk space, mitigating one of the main hassles of SQL databases. Its intended purpose is JSON storage, but any textual data can be stored.
+KissDB is a very simple key-value NoSQL database server built for small- to medium-scale data storage needs. It offers simultaneous connections, resource locking, and a RESTful API. It has a theoretically infinite database, table, and box size depending on available disk space, mitigating one of the main hassles of SQL databases. Its intended purpose is JSON storage, but any data can be stored.
 
 ### Structure
 The structure is as follows:
@@ -29,7 +29,7 @@ Or, if the box doesn't exist:
 `{"success": false, "result": "Box does not exist."}`
 
 ### Security
-The server will eventually implement authentication, but for the moment should be hidden behind localhost with a firewall in place blocking outside access to its bound port. Once authentication is implemented, it should still be hidden behind localhost and proxied via HTTPS using nginx or a similar server. The server must _never_ be placed in the root of an existing web server.
+The server will eventually implement authentication, but for the moment should be hidden behind a firewall blocking outside access to its bound port. Once authentication is implemented, it should still be proxied via HTTPS using nginx or a similar server. The server must _never_ be placed in the root of an existing web server.
 
 
 ### API
@@ -47,6 +47,7 @@ The server will eventually implement authentication, but for the moment should b
 N/A
 ##### Example Responses
 `{"success":true,"result":"Database successfully created."}`
+
 `{"success":false,"result":"Database already exists."}`
 
 ---
@@ -58,6 +59,7 @@ N/A
 N/A
 ##### Example Responses
 `{"success":true,"result":"Table successfully created."}`
+
 `{"success":false,"result":"Table already exists."}`
 
 ---
@@ -69,6 +71,7 @@ N/A
 `[content]`
 ##### Example Responses
 `{"success":true,"result":"Box successfully created."}`
+
 `{"success":false,"result":"Box already exists."}`
 
 ---
@@ -80,6 +83,7 @@ N/A
 N/A
 ##### Example Responses
 `["MyApplication1","MyApplication2"]`
+
 `[]`
 
 ---
@@ -91,6 +95,7 @@ N/A
 N/A
 ##### Example Responses
 `["Users","Themes"]`
+
 `[]`
 
 ---
@@ -102,6 +107,7 @@ N/A
 N/A
 ##### Example Responses
 `["ldarling","jdoe"]`
+
 `[]`
 
 ---
@@ -113,7 +119,9 @@ N/A
 N/A
 ##### Example Responses
 `{"success":true,"result":"Hello, world!"}`
+
 `{"success":true,"result":"{\"name\":\"Luke Darling\",\"email\":\"luke@lukedarling.dev\"}"}`
+
 `{"success":false,"result":"Box does not exist."}`
 
 ---
