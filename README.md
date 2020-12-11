@@ -82,9 +82,9 @@ N/A
 ##### Body
 N/A
 ##### Example Responses
-`["MyApplication1","MyApplication2"]`
+`{"success":true,"result":["MyApplication1","MyApplication2"]}`
 
-`[]`
+`{"success":true,"result":[]}`
 
 ---
 
@@ -94,9 +94,9 @@ N/A
 ##### Body
 N/A
 ##### Example Responses
-`["Users","Themes"]`
+`{"success":true,"result":["Users","Themes"]}`
 
-`[]`
+`{"success":true,"result":[]}`
 
 ---
 
@@ -106,9 +106,9 @@ N/A
 ##### Body
 N/A
 ##### Example Responses
-`["ldarling","jdoe"]`
+`{"success":true,"result":["ldarling","jdoe"]}`
 
-`[]`
+`{"success":true,"result":[]}`
 
 ---
 
@@ -131,6 +131,18 @@ N/A
 `PUT /<database>/<table>/<box>`
 ##### Body
 `<content>`
+##### Example Responses
+`{"success":true,"result":"Box successfully updated."}`
+
+---
+
+#### Delete all databases
+##### Header
+`DELETE /`
+##### Body
+N/A
+##### Example Responses
+`{"success":true,"result":"All databases successfully deleted."}`
 
 ---
 
@@ -139,14 +151,8 @@ N/A
 `DELETE /<database>`
 ##### Body
 N/A
-
----
-
-#### Delete a given database's table
-##### Header
-`DELETE /<database>/<table>`
-##### Body
-N/A
+##### Example Responses
+`{"success":true,"result":"Database successfully deleted."}`
 
 ---
 
@@ -155,6 +161,8 @@ N/A
 `DELETE /<database>/<table>`
 ##### Body
 N/A
+##### Example Responses
+`{"success":true,"result":"Table successfully deleted."}`
 
 ---
 
@@ -163,6 +171,8 @@ N/A
 `DELETE /<database>/<table>/<box>`
 ##### Body
 N/A
+##### Example Responses
+`{"success":true,"result":"Box successfully deleted."}`
 
 
 ### System Requirements

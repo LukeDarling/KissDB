@@ -95,6 +95,7 @@ def updateBox(db: str, table: str, box: str, content: str) -> bool:
 # Delete
 def deleteDatabase(db: str) -> bool:
     # TODO
+    raise Exception("Testing")
     return False
 
 def deleteTable(db: str, table: str) -> bool:
@@ -261,7 +262,7 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
-        # Create row
+        # Create box
         else:
 
             # Check structure existence
@@ -341,11 +342,88 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
 
     # Update
     elif verb == "PUT":
-        pass
+
+        if len(path) > 3:
+            return sendResponse(client, success = False, result = "Path exceeds depth of structure.", status = "400 Bad Request")
+
+        if len(path) < 3:
+            return sendResponse(client, success = False, result = "Only box contents can be updated.", status = "400 Bad Request")
+
+        # Make sure box exists
+        exists = boxExists(path[0], path[1], path[2])
+        # Box exists
+        if exists[0]:
+            try:
+                # Try updating the box
+                updateBox(path[0], path[1], path[2], data)
+                return sendResponse(client, success = True, result = "Box successfully updated.")
+            except:
+                # Probably a permission problem
+                logError("Could not update box: " + "/".join(path))
+                return sendResponse(client, success = False, result = "Box could not be updated.", status = "500 Internal Server Error")
+        else:
+            # Box doesn';'t exist
+            return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
     # Delete
     else:
-        pass
+
+        # Delete all databases
+        if len(path) == 1 and path[0] == "":
+            dbs = next(os.walk("data/db/"))[1]
+            total = len(dbs)
+            success = 0
+            for db in dbs:
+                try:
+                    deleteDatabase(db)
+                    success += 1
+                except:
+                    logError("Could not delete database: /" + db)
+            if total == success:
+                sendResponse(client, success = True, result = "All databases successfully deleted.")
+            else:
+                return sendResponse(client, success = False, result = (str(success) + " of " + str(total) + " database" + ("" if total == 1 else "s") + " successfully deleted. " + str(total - success) + " of " + str(total) + " database" + ("" if total == 1 else "s") + " could not be deleted."), status = "500 Internal Server Error")
+
+        # Delete database
+        elif len(path) == 1:
+            exists = databaseExists(path[0])
+            if exists[0]:
+                try:
+                    deleteDatabase(path[0])
+                    return sendResponse(client, success = True, result = "Database successfully deleted.")
+                except:
+                    logError("Database could not be deleted: " + "/".join(path))
+                    return sendResponse(client, success = False, result = "Database could not be deleted.", status = "500 Internal Server Error")
+            else:
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
+
+        # Delete table
+        elif len(path) == 2:
+            exists = tableExists(path[0], path[1])
+            if exists[0]:
+                try:
+                    deleteTable(path[0], path[1])
+                    return sendResponse(client, success = True, result = "Table successfully deleted.")
+                except:
+                    logError("Table could not be deleted: " + "/".join(path))
+                    return sendResponse(client, success = False, result = "Table could not be deleted.", status = "500 Internal Server Error")
+            else:
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
+                
+        # Delete box
+        elif len(path) == 3:
+            exists = boxExists(path[0], path[1], path[2])
+            if exists[0]:
+                try:
+                    deleteBox(path[0], path[1], path[2])
+                    return sendResponse(client, success = True, result = "Box successfully deleted.")
+                except:
+                    logError("Box could not be deleted: " + "/".join(path))
+                    return sendResponse(client, success = False, result = "Box could not be deleted.", status = "500 Internal Server Error")
+            else:
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
+
+
 
 # Prepare server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
