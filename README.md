@@ -22,7 +22,7 @@ In this way, I could access the information of a given username using a request 
 
 Which might return:
 
-`{"success": true, "result": ["{\"name\": \"Luke Darling\", \"email\": \"luke@lukedarling.dev\"}"]}`
+`{"success": true, "result": "{\"name\": \"Luke Darling\", \"email\": \"luke@lukedarling.dev\"}"}`
 
 Or, if the box doesn't exist:
 
