@@ -42,6 +42,32 @@ def sendResponse(client, success: bool, result: str, status: str = "200 OK"):
     client.send(("HTTP/1.1 " + status + "\r\nContent-type: application/json; charset=UTF-8\r\nContent-length: " + str(length) + "\r\nConnection: closed\r\n\r\n" + content).encode())
     client.close()
 
+# Exists?
+# Does database exist?
+def databaseExists(db: str) -> (bool, str):
+    if os.path.exists("data/db/" + db + "/"):
+        return (True, None)
+    else:
+        return (False, "Database does not exist.")
+
+# Does table exist?
+def tableExists(db: str, table: str) -> (bool, str):
+    if os.path.exists("data/db/" + db + "/" + table + "/"):
+        return (True, None)
+    else:
+        t = databaseExists(db)
+        return (False, "Table does not exist." if t[0] else t[1])
+
+# Does box exist?
+def boxExists(db: str, table: str, box: str) -> (bool, str):
+    if os.path.exists("data/db/" + db + "/" + table + "/" + box):
+        return (True, None)
+    else:
+        t = tableExists(db, table)
+        return (False, "Box does not exist." if t[0] else t[1])
+
+
+
 # Create
 def createDatabase(db: str) -> bool:
     # TODO
@@ -199,57 +225,65 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
         if len(path) == 1:
 
             # Database exists already, error
-            if os.path.exists("data/db/" + path[0] + "/"):
+            if databaseExists(path[0])[0]:
                 return sendResponse(client, success = False, result = "Database already exists.", status = "409 Conflict")
 
             # Database does not exist, create it
             else:
-                # TODO
-                pass
+                try:
+                    createDatabase(path[0])
+                    return sendResponse(client, success = True, result = "Database successfully created.")
+                except:
+                    logError("Could not create database: " + "/".join(path))
+                    return sendResponse(client, success = False, result = "Database could not be created.", status = "500 Internal Server Error")
 
         # Create table
         elif len(path) == 2:
 
             # Database exists
-            if os.path.exists("data/db/" + path[0] + "/"):
+            exists = databaseExists(path[0])
+            if exists[0]:
 
                 # Table exists already, error
-                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
+                if tableExists(path[0], path[1])[0]:
                     return sendResponse(client, success = False, result = "Table already exists.", status = "409 Conflict")
 
                 # Table does not exist, create it
                 else:
-                    # TODO
-                    pass
+                    try:
+                        createTable(path[0], path[1])
+                        return sendResponse(client, success = True, result = "Table successfully created.")
+                    except:
+                        logError("Could not create table: " + "/".join(path))
+                        return sendResponse(client, success = False, result = "Table could not be created.", status = "500 Internal Server Error")
 
             # Database does not exist, error
             else:
-                return sendResponse(client, success = False, result = "Database does not exist.", status = "404 Not Found")
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
         # Create row
         else:
-            # Database exists
-            if os.path.exists("data/db/" + path[0] + "/"):
 
-                # Table exists
-                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
+            # Structure exists
+            exists = tableExists(path[0], path[1])
+            if exists[0]:
 
-                    # Box already exists, error
-                    if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2] + ""):
-                        return sendResponse(client, success = False, result = "Box already exists.", status = "409 Conflict")
+                # Box exists already, error
+                if boxExists(path[0], path[1], path[2])[0]:
+                    return sendResponse(client, success = False, result = "Box already exists.", status = "409 Conflict")
 
-                    # Box does not exist, create it
-                    else:
-                        # TODO
-                        pass
-
-                # Table does not exist, error
+                # Box does not exist, create it
                 else:
-                    return sendResponse(client, success = False, result = "Table does not exist.", status = "404 Not Found")
+                    try:
+                        createBox(path[0], path[1], path[2], data)
+                        return sendResponse(client, success = True, result = "Box successfully created.")
+                    except:
+                        logError("Could not create box: " + "/".join(path))
+                        return sendResponse(client, success = False, result = "Box could not be created.", status = "500 Internal Server Error")
 
-            # Database does not exist, error
+            # Something in the structure does not exist, error
             else:
-                return sendResponse(client, success = False, result = "Database does not exist.", status = "404 Not Found")
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
     # Read
     elif verb == "GET":
@@ -261,64 +295,43 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
         # List tables
         elif len(path) == 1:
 
-            # Database exists, list its tables
-            if os.path.exists("data/db/" + path[0] + "/"):
+            # Check structure existence
+            exists = databaseExists(path[0])
+            if exists[0]:
                 return sendResponse(client, success = True, result = next(os.walk("data/db/" + path[0] + "/"))[1])
 
             # Database does not exist, error
             else:
-                return sendResponse(client, success = False, result = "Database does not exist.", status = "404 Not Found")
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
         # List boxes
         elif len(path) == 2:
 
-            # Database exists, check table
-            if os.path.exists("data/db/" + path[0] + "/"):
-
-                # Table exists, list its boxes
-                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
-                    return sendResponse(client, success = True, result = next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2])
-
-                # Table does not exist, error
-                else:
-                    return sendResponse(client, success = False, result = "Table does not exist.", status = "404 Not Found")
+            # Check structure existence
+            exists = tableExists(path[0], path[1])
+            if exists[0]:
+                return sendResponse(client, success = True, result = next(os.walk("data/db/" + path[0] + "/" + path[1] + "/"))[2])
 
             # Database does not exist, error
             else:
-                return sendResponse(client, success = False, result = "Database does not exist.", status = "404 Not Found")
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
         # Get box contents
         elif len(path) == 3:
 
-            # Database exists, check table
-            if os.path.exists("data/db/" + path[0] + "/"):
+            # Check structure existence
+            exists = boxExists(path[0], path[1], path[2])
+            if exists[0]:
+                try:
+                    data = readBox(path[0], path[1], path[2])
+                    return sendResponse(client, success = True, result = data)
+                except:
+                    logError("Unable to get box contents: " + "/".join(path))
+                    return sendResponse(client, success = False, result = "Problem getting box contents.", status = "500 Internal Server Error")
 
-                # Table exists, check box
-                if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/"):
-
-                    # Box exists, get its contents
-                    if os.path.exists("data/db/" + path[0] + "/" + path[1] + "/" + path[2]):
-                        try:
-                            data = readBox(path[0], path[1], path[2])
-                        except:
-                            logError("Unable to get box contents: " + "/".join(path))
-                            data = None
-                        if data == None:
-                            return sendResponse(client, success = False, result = "Problem getting box contents.", status = "500 Internal Server Error")
-                        else:
-                            return sendResponse(client, success = True, result = data)
-
-                    # Box does not exist, error
-                    else:
-                        return sendResponse(client, success = False, result = "Box does not exist.", status = "404 Not Found")
-
-                # Table does not exist, error
-                else:
-                    return sendResponse(client, success = False, result = "Table does not exist.", status = "404 Not Found")
-
-            # Database does not exist, error
+            # Structure does not exist, error
             else:
-                return sendResponse(client, success = False, result = "Database does not exist.", status = "404 Not Found")
+                return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
     # Update
     elif verb == "PUT":
@@ -341,7 +354,7 @@ while running:
     try:
         # Wait for request
         client, address = sock.accept()
-        client.settimeout(config["timeout-seconds"])
+        client.settimeout(config["request-timeout-seconds"])
         # Start a new thread to handle this client and go back to listening for requests
         threading.Thread(target = handleRequest, args = (client, address)).start()
     except KeyboardInterrupt:

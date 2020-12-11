@@ -45,6 +45,9 @@ The server will eventually implement authentication, but for the moment should b
 `POST /<database>`
 ##### Body
 N/A
+##### Example Responses
+`{"success":true,"result":"Database successfully created."}`
+`{"success":false,"result":"Database already exists."}`
 
 ---
 
@@ -53,6 +56,9 @@ N/A
 `POST /<database>/<table>`
 ##### Body
 N/A
+##### Example Responses
+`{"success":true,"result":"Table successfully created."}`
+`{"success":false,"result":"Table already exists."}`
 
 ---
 
@@ -61,6 +67,9 @@ N/A
 `POST /<database>/<table>/<box>`
 ##### Body
 `[content]`
+##### Example Responses
+`{"success":true,"result":"Box successfully created."}`
+`{"success":false,"result":"Box already exists."}`
 
 ---
 
@@ -69,6 +78,9 @@ N/A
 `GET /`
 ##### Body
 N/A
+##### Example Responses
+`["MyApplication1","MyApplication2"]`
+`[]`
 
 ---
 
@@ -77,6 +89,9 @@ N/A
 `GET /<database>`
 ##### Body
 N/A
+##### Example Responses
+`["Users","Themes"]`
+`[]`
 
 ---
 
@@ -85,6 +100,9 @@ N/A
 `GET /<database>/<table>`
 ##### Body
 N/A
+##### Example Responses
+`["ldarling","jdoe"]`
+`[]`
 
 ---
 
@@ -93,6 +111,10 @@ N/A
 `GET /<database>/<table>/<box>`
 ##### Body
 N/A
+##### Example Responses
+`{"success":true,"result":"Hello, world!"}`
+`{"success":true,"result":"{\"name\":\"Luke Darling\",\"email\":\"luke@lukedarling.dev\"}"}`
+`{"success":false,"result":"Box does not exist."}`
 
 ---
 
