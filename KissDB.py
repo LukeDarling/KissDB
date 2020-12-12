@@ -3,12 +3,18 @@
 # All rights reserved.
 
 # Imports
-import os, time, datetime, signal, fcntl, threading, socket
+import os, time, datetime, uuid, signal, shutil, fcntl, threading, socket
 import json, yaml
 
 
 # Constants
 CONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
+WRITE = 1
+READ = 0
+DELETE = -1
+
+journal = []
+cache = {}
 
 # Functions
 def log(entry: str, color:str = None):
@@ -66,45 +72,117 @@ def boxExists(db: str, table: str, box: str) -> (bool, str):
         t = tableExists(db, table)
         return (False, "Box does not exist." if t[0] else t[1])
 
-
-
 # Create
-def createDatabase(db: str) -> bool:
-    # TODO
-    return False
+def createDatabase(db: str):
+    os.mkdir("data/db/" + db + "/")
 
-def createTable(db: str, table: str) -> bool:
-    # TODO
-    return False
+def createTable(db: str, table: str):
+    os.mkdir("data/db/" + db + "/" + table + "/")
 
-def createBox(db: str, table: str, box: str, content: str = None) -> bool:
-    # TODO
-    return False
+def createBox(db: str, table: str, box: str, content: str = ""):
+    updateBox(db, table, box, content)
 
 # Read
 def readBox(db: str, table: str, box: str) -> str:
-    # TODO
-    raise Exception("Testing")
-    return ""
+    if not db + "/" + table + "/" + box in cache:
+        global journal
+        journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp()}]
+        while not db + "/" + table + "/" + box in cache:
+            pass
+
+    # TODO: Update cache access time
+    return cache[db + "/" + table + "/" + box]["value"]
 
 # Update
-def updateBox(db: str, table: str, box: str, content: str) -> bool:
-    # TODO
-    return False
+def updateBox(db: str, table: str, box: str, content: str):
+    global journal
+    journal += [{"path": db + "/" + table + "/" + box, "action": WRITE, "requested": datetime.datetime.now().timestamp(), "value": content}]
 
 # Delete
-def deleteDatabase(db: str) -> bool:
-    # TODO
-    raise Exception("Testing")
-    return False
+def deleteDatabase(db: str):
+    global journal
+    journal += [{"path": db, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
 
-def deleteTable(db: str, table: str) -> bool:
-    # TODO
-    return False
+def deleteTable(db: str, table: str):
+    global journal
+    journal += [{"path": db + "/" + table, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
 
-def deleteBox(db: str, table: str, box: str) -> bool:
-    # TODO
-    return False
+def deleteBox(db: str, table: str, box: str):
+    global journal
+    journal += [{"path": db + "/" + table + "/" + box, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
+
+def journalingThread():
+    global journal
+    global cache
+
+    logInfo("Journaling thread started.")
+
+    # Watch for journaling requests until server shuts down
+    while running:
+
+        # Wait
+        time.sleep(0.1)
+
+        # Check if there are any new journaling requests
+        while len(journal) > 0:
+
+            # Sort the journal requests to determine the oldest
+            journal = sorted(journal, key=lambda k: k["requested"])
+            # Grab the oldest journal request and start with it
+            entry = journal.pop(0)
+
+            timestamp = datetime.datetime.now().timestamp()
+
+            # Handle journal WRITE requests
+            if entry["action"] == WRITE:
+
+                # Add the requested box value to the cache
+                cache[entry["path"]] = {"last-accessed": timestamp, "value": entry["value"]}
+
+                # Write the changes to disk
+                with open("data/db/" + entry["path"], "w") as box:
+                    box.write(entry["value"])
+
+            # Handle journal READ requests
+            elif entry["action"] == READ:
+
+                # Read the requested box into the cache
+                with open("data/db/" + entry["path"], "r") as box:
+                    cache[entry["path"]] = {"last-accessed": timestamp, "value": box.read()}
+
+            # Handle journal DELETE requests
+            elif entry["action"] == DELETE:
+
+                # Delete the requested entity from disk
+                if os.path.isdir("data/db/" + entry["path"]):
+                    shutil.rmtree("data/db/" + entry["path"])
+                else:
+                    os.remove("data/db/" + entry["path"])
+
+                # Delete the requested entity from the cache
+                if entry["path"] in cache:
+                    del cache[entry["path"]]
+
+    logInfo("Journaling thread finished.")
+
+def cacheManagerThread():
+    global cache
+    
+    logInfo("Cache manager thread started.")
+
+    # Clean up cache regularly until server shuts down
+    while running:
+
+        # Wait a second
+        time.sleep(1)
+
+        # Loop through all cache entries
+        for path in cache:
+            # If the cache hasn't been accessed for the amount of time configured, remove it
+            if cache[path]["last-accessed"] + config["box-cache-seconds"] < datetime.datetime.now().timestamp():
+                del cache[path]
+    
+    logInfo("Cache manager thread finished.")
 
 # Setup
 log("Starting server...")
@@ -423,7 +501,9 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
-
+# Begin background threads
+threading.Thread(target = journalingThread).start()
+threading.Thread(target = cacheManagerThread).start()
 
 # Prepare server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -438,6 +518,7 @@ while running:
         # Wait for request
         client, address = sock.accept()
         client.settimeout(config["request-timeout-seconds"])
+
         # Start a new thread to handle this client and go back to listening for requests
         threading.Thread(target = handleRequest, args = (client, address)).start()
     except KeyboardInterrupt:
