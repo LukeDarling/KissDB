@@ -177,7 +177,7 @@ def cacheManagerThread():
         time.sleep(1)
 
         # Loop through all cache entries
-        for path in cache:
+        for path in list(cache):
             # If the cache hasn't been accessed for the amount of time configured, remove it
             if cache[path]["last-accessed"] + config["box-cache-seconds"] < datetime.datetime.now().timestamp():
                 del cache[path]
