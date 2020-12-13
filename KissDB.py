@@ -89,8 +89,8 @@ def readBox(db: str, table: str, box: str) -> str:
         journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp()}]
         while not db + "/" + table + "/" + box in cache:
             pass
-
-    # TODO: Update cache access time
+    else:
+        cache[db + "/" + table + "/" + box]["last-accessed"] = datetime.datetime.now().timestamp()
     return cache[db + "/" + table + "/" + box]["value"]
 
 # Update
