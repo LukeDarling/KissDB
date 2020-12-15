@@ -9,9 +9,9 @@ import json, yaml
 
 # Constants
 CONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
-WRITE = 1
-READ = 0
-DELETE = -1
+WRITE = 0
+READ = 0.1
+DELETE = 0.2
 
 journal = []
 cache = {}
@@ -86,7 +86,7 @@ def createBox(db: str, table: str, box: str, content: str = ""):
 def readBox(db: str, table: str, box: str) -> str:
     if not db + "/" + table + "/" + box in cache:
         global journal
-        journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp()}]
+        journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp() - READ}]
         while not db + "/" + table + "/" + box in cache:
             pass
     else:
@@ -96,20 +96,20 @@ def readBox(db: str, table: str, box: str) -> str:
 # Update
 def updateBox(db: str, table: str, box: str, content: str):
     global journal
-    journal += [{"path": db + "/" + table + "/" + box, "action": WRITE, "requested": datetime.datetime.now().timestamp(), "value": content}]
+    journal += [{"path": db + "/" + table + "/" + box, "action": WRITE, "requested": datetime.datetime.now().timestamp() - WRITE, "value": content}]
 
 # Delete
 def deleteDatabase(db: str):
     global journal
-    journal += [{"path": db, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
+    journal += [{"path": db, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
 
 def deleteTable(db: str, table: str):
     global journal
-    journal += [{"path": db + "/" + table, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
+    journal += [{"path": db + "/" + table, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
 
 def deleteBox(db: str, table: str, box: str):
     global journal
-    journal += [{"path": db + "/" + table + "/" + box, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
+    journal += [{"path": db + "/" + table + "/" + box, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
 
 def journalingThread():
     global journal
@@ -121,7 +121,7 @@ def journalingThread():
     while running:
 
         # Wait
-        time.sleep(0.1)
+        time.sleep(0.01)
 
         # Check if there are any new journaling requests
         while len(journal) > 0:
@@ -129,6 +129,7 @@ def journalingThread():
             # Sort the journal requests to determine the oldest
             journal = sorted(journal, key=lambda k: k["requested"])
             # Grab the oldest journal request and start with it
+            # Priority is DELETE, READ, then WRITE
             entry = journal.pop(0)
 
             timestamp = datetime.datetime.now().timestamp()
@@ -183,61 +184,6 @@ def cacheManagerThread():
                 del cache[path]
     
     logInfo("Cache manager thread finished.")
-
-# Setup
-log("Starting server...")
-running = True
-SIGINT = signal.getsignal(signal.SIGINT)
-signal.signal(signal.SIGINT, interrupt)
-log("Checking configuration...")
-if not os.path.exists("data/config.yml"):
-    if not os.path.exists("data/"):
-        logWarning("Data folder not found.")
-        log("Creating data folder...")
-        try:
-            os.mkdir("data/")
-            log("Data folder created.")
-        except:
-            logError("Data folder could not be created.")
-            exitGracefully()
-    logWarning("Configuration not found.")
-    log("Creating configuration...")
-    try:
-        with open("data/config.yml", "w") as f:
-            f.write(yaml.dump(CONFIG, Dumper = yaml.Dumper))
-        log("Configuration created.")
-        cd = os.path.split(os.path.realpath(__file__))[0]
-        logInfo("You can modify the configuration at " + cd + "/data/config.yml")
-    except:
-        logError("Configuration could not be created.")
-        exitGracefully()
-else:
-    log("Configuration found.")
-
-log("Loading configuration...")
-try:
-    with open("data/config.yml", "r") as f:
-        config = yaml.load(f.read(), Loader = yaml.Loader)
-    log("Configuration loaded.")
-except:
-    logError("Configuration could not be loaded.")
-    exitGracefully()
-
-log("Checking database storage...")
-if not os.path.exists("data/db/"):
-    logWarning("Database storage not found.")
-    try:
-        os.mkdir("data/db/")
-        log("Database storage created.")
-    except:
-        logError("Could not create database storage.")
-else:
-    log("Database storage found.")
-
-logInfo("Server successfully started on localhost:" + str(config["server-bind-port"]) + ".")
-
-dbCount = len(next(os.walk("data/db/"))[1])
-logInfo("Handling " + "{:,}".format(dbCount) + " database" + ("." if dbCount == 1 else "s."))
 
 def handleRequest(client, address):
     data = []
@@ -501,9 +447,64 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
 
+
+# Setup
+log("Starting server...")
+running = True
+SIGINT = signal.getsignal(signal.SIGINT)
+signal.signal(signal.SIGINT, interrupt)
+log("Checking configuration...")
+if not os.path.exists("data/config.yml"):
+    if not os.path.exists("data/"):
+        logWarning("Data folder not found.")
+        log("Creating data folder...")
+        try:
+            os.mkdir("data/")
+            log("Data folder created.")
+        except:
+            logError("Data folder could not be created.")
+            exitGracefully()
+    logWarning("Configuration not found.")
+    log("Creating configuration...")
+    try:
+        with open("data/config.yml", "w") as f:
+            f.write(yaml.dump(CONFIG, Dumper = yaml.Dumper))
+        log("Configuration created.")
+        cd = os.path.split(os.path.realpath(__file__))[0]
+        logInfo("You can modify the configuration at " + cd + "/data/config.yml")
+    except:
+        logError("Configuration could not be created.")
+        exitGracefully()
+else:
+    log("Configuration found.")
+
+log("Loading configuration...")
+try:
+    with open("data/config.yml", "r") as f:
+        config = yaml.load(f.read(), Loader = yaml.Loader)
+    log("Configuration loaded.")
+except:
+    logError("Configuration could not be loaded.")
+    exitGracefully()
+
+log("Checking database storage...")
+if not os.path.exists("data/db/"):
+    logWarning("Database storage not found.")
+    try:
+        os.mkdir("data/db/")
+        log("Database storage created.")
+    except:
+        logError("Could not create database storage.")
+else:
+    log("Database storage found.")
+
 # Begin background threads
 threading.Thread(target = journalingThread).start()
 threading.Thread(target = cacheManagerThread).start()
+
+dbCount = len(next(os.walk("data/db/"))[1])
+logInfo("Handling " + "{:,}".format(dbCount) + " database" + ("." if dbCount == 1 else "s."))
+logInfo("Server successfully started on localhost:" + str(config["server-bind-port"]) + ".")
 
 # Prepare server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
