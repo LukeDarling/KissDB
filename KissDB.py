@@ -8,7 +8,7 @@ import json, yaml
 
 
 # Constants
-CONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
+DEFAULTCONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
 WRITE = 0
 READ = 0.1
 DELETE = 0.2
@@ -468,7 +468,7 @@ if not os.path.exists("data/config.yml"):
     log("Creating configuration...")
     try:
         with open("data/config.yml", "w") as f:
-            f.write(yaml.dump(CONFIG, Dumper = yaml.Dumper))
+            f.write(yaml.dump(DEFAULTCONFIG, Dumper = yaml.Dumper))
         log("Configuration created.")
         cd = os.path.split(os.path.realpath(__file__))[0]
         logInfo("You can modify the configuration at " + cd + "/data/config.yml")
