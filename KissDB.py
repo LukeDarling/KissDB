@@ -9,9 +9,9 @@ import json, yaml
 
 # Constants
 DEFAULTCONFIG = {"server-bind-port": 1700, "box-cache-seconds": 300, "request-timeout-seconds": 60}
-WRITE = 0
-READ = 0.1
-DELETE = 0.2
+WRITE = 1
+READ = 0
+DELETE = -1
 
 journal = []
 cache = {}
@@ -86,7 +86,7 @@ def createBox(db: str, table: str, box: str, content: str = ""):
 def readBox(db: str, table: str, box: str) -> str:
     if not db + "/" + table + "/" + box in cache:
         global journal
-        journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp() - READ}]
+        journal += [{"path": db + "/" + table + "/" + box, "action": READ, "requested": datetime.datetime.now().timestamp()}]
         while not db + "/" + table + "/" + box in cache:
             pass
     else:
@@ -96,20 +96,20 @@ def readBox(db: str, table: str, box: str) -> str:
 # Update
 def updateBox(db: str, table: str, box: str, content: str):
     global journal
-    journal += [{"path": db + "/" + table + "/" + box, "action": WRITE, "requested": datetime.datetime.now().timestamp() - WRITE, "value": content}]
+    journal += [{"path": db + "/" + table + "/" + box, "action": WRITE, "requested": datetime.datetime.now().timestamp(), "value": content}]
 
 # Delete
 def deleteDatabase(db: str):
     global journal
-    journal += [{"path": db, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
+    journal += [{"path": db, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
 
 def deleteTable(db: str, table: str):
     global journal
-    journal += [{"path": db + "/" + table, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
+    journal += [{"path": db + "/" + table, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
 
 def deleteBox(db: str, table: str, box: str):
     global journal
-    journal += [{"path": db + "/" + table + "/" + box, "action": DELETE, "requested": datetime.datetime.now().timestamp() - DELETE}]
+    journal += [{"path": db + "/" + table + "/" + box, "action": DELETE, "requested": datetime.datetime.now().timestamp()}]
 
 def journalingThread():
     global journal
@@ -129,7 +129,6 @@ def journalingThread():
             # Sort the journal requests to determine the oldest
             journal = sorted(journal, key=lambda k: k["requested"])
             # Grab the oldest journal request and start with it
-            # Priority is DELETE, READ, then WRITE
             entry = journal.pop(0)
 
             timestamp = datetime.datetime.now().timestamp()
