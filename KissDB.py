@@ -369,6 +369,9 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             # Structure does not exist, error
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
+    # Update
+    elif verb == "PUT":
+        return handleVerifiedRequest(client, "POST", path, data)
 
     # Delete
     else:
