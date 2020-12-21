@@ -248,9 +248,9 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
         # Create database
         if len(path) == 1:
 
-            # Database exists already, error
+            # Database exists already
             if databaseExists(path[0])[0]:
-                return sendResponse(client, success = False, result = "Database already exists.", status = "409 Conflict")
+                return sendResponse(client, success = True, result = "Database already exists.", status = "200 OK")
 
             # Database does not exist, create it
             else:
@@ -268,9 +268,9 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             exists = databaseExists(path[0])
             if exists[0]:
 
-                # Table exists already, error
+                # Table exists already
                 if tableExists(path[0], path[1])[0]:
-                    return sendResponse(client, success = False, result = "Table already exists.", status = "409 Conflict")
+                    return sendResponse(client, success = True, result = "Table already exists.", status = "200 OK")
 
                 # Table does not exist, create it
                 else:
@@ -293,9 +293,16 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             # Structure exists
             if exists[0]:
 
-                # Box exists already, error
+                # Box exists already
                 if boxExists(path[0], path[1], path[2])[0]:
-                    return sendResponse(client, success = False, result = "Box already exists.", status = "409 Conflict")
+                    try:
+                        # Try updating the box
+                        updateBox(path[0], path[1], path[2], data)
+                        return sendResponse(client, success = True, result = "Box successfully updated.")
+                    except:
+                        # Probably a permission problem
+                        logError("Could not update box: " + "/".join(path))
+                        return sendResponse(client, success = False, result = "Box could not be updated.", status = "500 Internal Server Error")
 
                 # Box does not exist, create it
                 else:
@@ -362,31 +369,6 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
             # Structure does not exist, error
             else:
                 return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
-
-    # Update
-    elif verb == "PUT":
-
-        if len(path) > 3:
-            return sendResponse(client, success = False, result = "Path exceeds depth of structure.", status = "400 Bad Request")
-
-        if len(path) < 3:
-            return sendResponse(client, success = False, result = "Only box contents can be updated.", status = "400 Bad Request")
-
-        # Make sure box exists
-        exists = boxExists(path[0], path[1], path[2])
-        # Box exists
-        if exists[0]:
-            try:
-                # Try updating the box
-                updateBox(path[0], path[1], path[2], data)
-                return sendResponse(client, success = True, result = "Box successfully updated.")
-            except:
-                # Probably a permission problem
-                logError("Could not update box: " + "/".join(path))
-                return sendResponse(client, success = False, result = "Box could not be updated.", status = "500 Internal Server Error")
-        else:
-            # Box doesn't exist, create it
-            return handleVerifiedRequest(client, "POST", path, data)
 
     # Delete
     else:
