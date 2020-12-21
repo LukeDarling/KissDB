@@ -385,8 +385,8 @@ def handleVerifiedRequest(client, verb: str, path: str, data: str):
                 logError("Could not update box: " + "/".join(path))
                 return sendResponse(client, success = False, result = "Box could not be updated.", status = "500 Internal Server Error")
         else:
-            # Box doesn';'t exist
-            return sendResponse(client, success = False, result = exists[1], status = "404 Not Found")
+            # Box doesn't exist, create it
+            return handleVerifiedRequest(client, "POST", path, data)
 
     # Delete
     else:
