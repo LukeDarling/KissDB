@@ -3,11 +3,14 @@
 # All rights reserved.
 
 # Imports
+import sys, signal
 from src.Daemon import *
 from src.Config import *
 
-config = Config.load()
-if(config == None):
-    exit(1)
+daemon = Daemon.getInstance().start()
 
-daemon = Daemon().start(config)
+def signalHandler(signal, _):
+    print("\r", end = "")
+    daemon.stop()
+
+signal.signal(signal.SIGINT, signalHandler)

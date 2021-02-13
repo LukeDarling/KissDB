@@ -15,7 +15,7 @@ class Logger:
     @classmethod
     def logInfo(_, entry: str):
         """Takes an INFO log entry and prints it to standard output."""
-        Logger.log("INFO: " + entry + "", color="0;34")
+        Logger.log("INFO: " + entry + "", color="1;37")
 
     @classmethod
     def logWarning(_, entry: str):
