@@ -4,7 +4,7 @@
 
 # Imports
 from __future__ import annotations
-import sys, os, socket, threading
+import sys, os, socket, threading, time
 from typing import List
 from src.Logger import Logger
 from src.Config import Config
@@ -18,6 +18,7 @@ class Daemon:
         daemon.running = False
         daemon.listener = None
         daemon.config = config
+        Daemon.currentRequests = 0
         Daemon.instance = daemon
 
 
@@ -45,7 +46,7 @@ class Daemon:
             Logger.logWarning("Database storage not found.")
             try:
                 os.mkdir(DB_DIRECTORY)
-                Logger.logInfo("Database storage created.")
+                Logger.logNotice("Database storage created.")
             except:
                 Logger.logError("Could not create database storage.")
                 daemon.stop()
@@ -62,7 +63,7 @@ class Daemon:
         Logger.logInfo("KissDB daemon started.")
 
         dbCount = len(next(os.walk(DB_DIRECTORY))[1])
-        Logger.logInfo("Handling " + "{:,}".format(dbCount) + " database" + ("." if dbCount == 1 else "s."))
+        Logger.logNotice("Handling " + "{:,}".format(dbCount) + " database" + ("." if dbCount == 1 else "s."))
 
         return daemon
 
@@ -79,6 +80,12 @@ class Daemon:
             daemon.listener.join()
 
         # Wait for threads to finish
+        lastRequestCount = Daemon.currentRequests + 1
+        while Daemon.currentRequests > 0:
+            if lastRequestCount > Daemon.currentRequests:
+                Logger.logNotice("Waiting for " + str(Daemon.currentRequests) + " request" + ("" if Daemon.currentRequests == 1 else "s") + " to finish...")
+                lastRequestCount = Daemon.currentRequests
+            time.sleep(0.1)
 
         Logger.logInfo("KissDB daemon stopped.")
 
@@ -107,6 +114,7 @@ class Daemon:
                 client.settimeout(daemon.config["request-timeout-seconds"])
 
                 # Start a new thread to handle this client and go back to listening for requests
+                Daemon.currentRequests += 1
                 threading.Thread(target = daemon.RequestThread, args = (client, address)).start()
             except:
                 pass
@@ -116,4 +124,6 @@ class Daemon:
 
 
     def RequestThread(daemon, client, address):
-        pass
+        time.sleep(10)
+        client.close()
+        Daemon.currentRequests -= 1

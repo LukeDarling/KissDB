@@ -5,7 +5,7 @@
 # Imports
 import os, yaml
 from typing import List
-from src.Constants import *
+from src.Constants import DEFAULT_CONFIG, ROOT_DIRECTORY, DATA_DIRECTORY, DB_DIRECTORY
 from src.Logger import Logger
 
 class Config:
@@ -21,7 +21,7 @@ class Config:
                 Logger.logInfo("Creating data folder...")
                 try:
                     os.mkdir(DATA_DIRECTORY)
-                    Logger.logInfo("Data folder created.")
+                    Logger.logNotice("Data folder created.")
                 except:
                     Logger.logError("Data folder could not be created.")
                     return None
@@ -31,8 +31,8 @@ class Config:
             try:
                 with open(DATA_DIRECTORY + "config.yml", "w") as f:
                     f.write(yaml.dump(DEFAULT_CONFIG, Dumper = yaml.Dumper))
-                Logger.logInfo("Configuration created.")
-                Logger.logInfo("You can modify the configuration at " + DATA_DIRECTORY + "config.yml")
+                Logger.logNotice("Configuration created.")
+                Logger.logNotice("You can modify the configuration at " + DATA_DIRECTORY + "config.yml")
             except:
                 Logger.logError("Configuration could not be created.")
                 return None
