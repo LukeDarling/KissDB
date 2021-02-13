@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# KissDB Database Daemon written by Luke Darling.
+# KissDB written by Luke Darling.
 # All rights reserved.
 
 # Imports
@@ -15,11 +15,11 @@ class Daemon:
 
     def start(daemon, config: List) -> Daemon:
 
-        Logger.logInfo("Starting KissDB Database Daemon...")
+        Logger.logInfo("Starting KissDB daemon...")
 
         # Main logic here
 
         daemon.running = True
-        Logger.logInfo("KissDB Database Daemon started.")
+        Logger.logInfo("KissDB daemon started.")
 
         return daemon

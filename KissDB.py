@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# KissDB Database Daemon written by Luke Darling.
+# KissDB written by Luke Darling.
 # All rights reserved.
 
 # Imports

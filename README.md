@@ -1,16 +1,16 @@
 # KissDB
 
 
-## Keep It Simple, Stupid: Database Server
+## Keep It Simple, Stupid: Database Daemon
 
 
 ### About
-KissDB is a very simple key-value NoSQL database server built for small- to medium-scale data storage needs. It offers simultaneous connections, resource locking, and a RESTful API. It has a theoretically infinite database, table, and box size depending on available disk space, mitigating one of the main hassles of SQL databases. Its intended purpose is JSON storage, but any data can be stored.
+KissDB is a very simple key-value NoSQL database daemon built for small- to medium-scale data storage needs. It offers simultaneous connections, resource locking, and a RESTful API. It has a theoretically infinite database, table, and box size depending on available disk space, mitigating one of the main hassles of SQL databases. Its intended purpose is JSON storage, but any data can be stored.
 
 ### Structure
 The structure is as follows:
 
-- One KissDB server hosts an unlimited number of database objects.
+- One KissDB daemon hosts an unlimited number of database objects.
 - One KissDB database object holds an unlimited number of table objects.
 - One KissDB table object holds an unlimited number of boxes.
 
@@ -29,7 +29,7 @@ Or, if the box doesn't exist:
 `{"success": false, "result": "Box does not exist."}`
 
 ### Security
-The server will eventually implement authentication, but for the moment should be hidden behind a firewall blocking outside access to its bound port. Once authentication is implemented, it should still be proxied via HTTPS using nginx or a similar server. The server must _never_ be placed in the root of an existing web server.
+The daemon will eventually implement authentication, but for the moment should be hidden behind a firewall blocking outside access to its bound port. Once authentication is implemented, it should still be proxied via HTTPS using nginx or a similar proxy server. The server must _never_ be placed in the root of an existing web server.
 
 
 ### API
@@ -128,7 +128,7 @@ N/A
 
 #### Update the contents of a given box
 ##### Header
-`PUT /<database>/<table>/<box>`
+`POST /<database>/<table>/<box>`
 ##### Body
 `<content>`
 ##### Example Responses
