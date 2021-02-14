@@ -8,6 +8,7 @@ import sys, os, socket, threading, time
 from typing import List
 from src.Logger import Logger
 from src.Config import Config
+from src.Request import Request
 from src.Constants import DEFAULT_CONFIG, ROOT_DIRECTORY, DATA_DIRECTORY, DB_DIRECTORY
 
 class Daemon:
@@ -123,7 +124,6 @@ class Daemon:
 
 
 
-    def RequestThread(daemon, client, address):
-        time.sleep(10)
-        client.close()
+    def RequestThread(daemon, client: socket, address):
+        Request(daemon, client, address)
         Daemon.currentRequests -= 1
