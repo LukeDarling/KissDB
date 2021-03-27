@@ -4,25 +4,46 @@
 
 # Imports
 from typing import List
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 from datetime import datetime
 import os, time, uuid, signal, shutil, fcntl, threading, socket, json, yaml
 
-cache = {{{}}}
-readRequests = []
+cache = {}
+requests = []
+
 DATABASE_PATH = "data/db/"
 
 class ReadRequest:
+
+    database = None
+    table = None
+    box = None
+    data = None
+    isComplete = False
+    requestedAt = 0
+
+    def ReadRequest(self, database, table, box):
+        self.requestedAt = datetime.now().timestamp()
+        self.database = database
+        self.table = table
+        self.box = box
+        requests.append(self)
+
+
+class WriteRequest:
 
     path = None
     data = None
     isComplete = False
     requestedAt = 0
 
-    def ReadRequest(self, path):
+    def WriteRequest(self, database, table, box, data):
         self.requestedAt = datetime.now().timestamp()
-        self.path = path
-        readRequests.append(self)
+        self.database = database
+        self.table = table
+        self.box = box
+        self.data = data
+        requests.append(self)
 
 app = Flask(__name__)
 
@@ -219,29 +240,33 @@ def tableDelete(database, table):
 @app.route("/<database>/<table>/<box>", methods=["GET"])
 def tableRead(database, table, box):
 
-    if database in cache:
-        if table in cache[database]:
-            if box in cache[database][table]:
-                cache[database][table][box]["last-accessed"] = datetime.now().timestamp()
-                return jsonify({"success": True, "message": "Box successfully retrieved.", "result": cache[database][table][box]["data"]})
+    if os.path.join(database, table, box) in cache:
+        cache[os.path.join(database, table, box)]["last-accessed"] = datetime.now().timestamp()
+        return jsonify({"success": True, "message": "Box successfully retrieved.", "result": cache[os.path.join(database, table, box)]["data"]})
 
-    req = ReadRequest(os.path.join(DATABASE_PATH, database, table, box + ".box"))
+    req = ReadRequest(database, table, box)
 
     while not req.isComplete:
         continue
 
-    
+    cache[os.path.join(database, table, box)] = {"last-accessed": datetime.now().timestamp(), "data": req.data}
+    return jsonify({"success": True, "message": "Box successfully retrieved.", "result": req.data})
+
 
 
 @app.route("/<database>/<table>/<box>", methods=["POST", "PUT"])
 def tableUpdate(database, table, box):
-    pass
+    
+    cache[os.path.join(database, table, box)] = {"last-accessed": datetime.now().timestamp(), "data": request.get_data()}
+    WriteRequest(database, table, box, request.get_data())
+
 
 
 
 @app.route("/<database>/<table>/<box>", methods=["DELETE"])
 def tableDelete(database, table, box):
-    pass
+    del cache[os.path.join(database, table, box)]
+    objectDelete(os.path.join(database, table, box))
 
 
 
